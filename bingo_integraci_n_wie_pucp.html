@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Bingo RUTAS STEM - WIE PUCP</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@800;900&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- QR Code Generator Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <!-- Canvas Confetti for Celebration -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
+    <style>
+        body { 
+            font-family: 'Poppins', sans-serif; 
+            background-color: #2e1065; 
+            color: #ffffff;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .font-head { font-family: 'Montserrat', sans-serif; }
+        
+        .grid-cell {
+            touch-action: manipulation;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .cell-selected {
+            background-color: #a855f7 !important;
+            color: #ffffff !important;
+            border-color: #f0abfc !important;
+            transform: scale(0.96);
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .logo-box {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: white;
+            border-radius: 9999px;
+            padding: 2px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+        }
+
+        @media print {
+            .no-print { display: none !important; }
+            body { padding: 0 !important; background: white !important; color: black !important; }
+            .print-card { 
+                border: 4px solid #4c1d95 !important; 
+                box-shadow: none !important; 
+                width: 100% !important; 
+                max-width: 100% !important;
+                page-break-inside: avoid;
+                background-color: #4c1d95 !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+        }
+    </style>
+</head>
+<body class="p-2 sm:p-4 min-h-screen flex flex-col items-center justify-start sm:justify-center">
+
+    <!-- BARRA SUPERIOR DE ACCIONES (No Imprimible) -->
+    <div class="no-print w-full max-w-md sm:max-w-xl mb-3 flex flex-wrap items-center justify-between gap-2 bg-purple-950/80 backdrop-blur-md p-3 rounded-xl border border-purple-700/50 shadow-lg">
+        <div class="flex items-center gap-2">
+            <span class="w-3 h-3 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span class="font-bold text-xs sm:text-sm text-purple-200">Bingo Interactivo WIE</span>
+        </div>
+        
+        <div class="flex items-center gap-1.5">
+            <button onclick="openQRModal()" class="px-2.5 py-1.5 bg-purple-800 hover:bg-purple-700 text-purple-100 text-xs font-bold rounded-lg transition flex items-center gap-1">
+                <i class="fa-solid fa-qrcode"></i> <span>Generar QR</span>
+            </button>
+            <button onclick="shuffleGrid()" class="px-2.5 py-1.5 bg-purple-800 hover:bg-purple-700 text-purple-100 text-xs font-bold rounded-lg transition flex items-center gap-1">
+                <i class="fa-solid fa-shuffle"></i> <span>Mezclar</span>
+            </button>
+            <button onclick="resetBoard()" class="px-2.5 py-1.5 bg-purple-900 hover:bg-purple-800 text-purple-200 text-xs font-bold rounded-lg transition">
+                <i class="fa-solid fa-rotate-right"></i>
+            </button>
+            <button onclick="window.print()" class="px-3 py-1.5 bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold rounded-lg shadow transition">
+                <i class="fa-solid fa-print"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- MAIN CARD BINGO -->
+    <main class="print-card w-full max-w-md sm:max-w-xl bg-purple-900 text-white border-4 border-purple-950 rounded-2xl p-3 sm:p-6 shadow-2xl relative overflow-hidden">
+        
+        <!-- HEADER EXACTO AL AFICHE -->
+        <div class="flex items-center justify-between mb-3 pb-2 border-b-2 border-purple-700">
+            <!-- LOGO RUTAS STEM -->
+            <div class="bg-black text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl transform -rotate-2 border-2 border-white shadow-lg">
+                <div class="font-head font-black text-xl sm:text-2xl tracking-tighter leading-none">RUTAS</div>
+                <div class="font-head font-black text-xl sm:text-2xl text-purple-300 tracking-tighter leading-none">STEM</div>
+                <p class="text-[7px] sm:text-[8px] font-medium text-purple-200 mt-0.5 italic tracking-normal">Explorar también es parte de formarse</p>
+            </div>
+            
+            <!-- TITULO BINGO WIE PUCP -->
+            <div class="text-right">
+                <h1 class="font-head font-black text-2xl sm:text-4xl tracking-tight leading-none text-white">BINGO</h1>
+                <h2 class="font-head font-black text-lg sm:text-2xl text-purple-300 leading-none mt-1">WIE PUCP</h2>
+            </div>
+        </div>
+
+        <!-- CAMPO NOMBRE Y PROGRESO -->
+        <div class="mb-3 flex items-center justify-between gap-2 bg-purple-950/60 p-2 rounded-lg border border-purple-700/60">
+            <div class="flex items-center gap-2 flex-grow">
+                <span class="text-[11px] font-black text-purple-300 uppercase tracking-wide">Nombre:</span>
+                <input type="text" id="playerName" placeholder="Escribe tu nombre..." class="w-full bg-transparent text-xs sm:text-sm font-bold text-white focus:outline-none border-b border-purple-400 border-dashed placeholder-purple-400/60">
+            </div>
+            <div class="no-print text-right pl-2">
+                <span id="scoreBadge" class="text-[10px] font-black bg-purple-800 text-purple-200 px-2 py-0.5 rounded-full border border-purple-600">0/24</span>
+            </div>
+        </div>
+
+        <!-- B I N G O TITULOS -->
+        <div class="grid grid-cols-5 text-center font-head font-black text-lg sm:text-xl text-purple-200 mb-1">
+            <div>B</div><div>I</div><div>N</div><div>G</div><div>O</div>
+        </div>
+
+        <!-- GRID 5x5 DE CASILLAS -->
+        <div id="grid" class="grid grid-cols-5 gap-1.5"></div>
+
+        <!-- FOOTER CON LOGOS EXACTOS -->
+        <div class="mt-4 pt-3 border-t-2 border-purple-700 flex flex-wrap items-center justify-between gap-2 text-[10px]">
+            <div>
+                <p class="font-black text-white uppercase tracking-wider text-[9px] sm:text-[10px]">WIE PUCP SIGUENOS EN NUESTRAS REDES</p>
+            </div>
+            
+            <!-- CONTENEDOR DE LOS 3 LOGOS OFICIALES -->
+            <div class="flex items-center gap-2 sm:gap-3">
+                
+                <!-- LOGO 1: TERCIO ESTUDIANTIL - EEGGCC PUCP -->
+                <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-white border-2 border-emerald-500 p-0.5 flex flex-col items-center justify-center text-center shadow-md overflow-hidden relative">
+                    <svg viewBox="0 0 100 100" class="w-full h-full">
+                        <circle cx="50" cy="50" r="46" fill="none" stroke="#16a34a" stroke-width="3"/>
+                        <!-- Atom & Flask -->
+                        <path d="M 35 65 L 45 45 L 45 35 L 55 35 L 55 45 L 65 65 Z" fill="none" stroke="#16a34a" stroke-width="3" stroke-linejoin="round"/>
+                        <ellipse cx="50" cy="50" rx="30" ry="10" fill="none" stroke="#16a34a" stroke-width="2.5" transform="rotate(30 50 50)"/>
+                        <ellipse cx="50" cy="50" rx="30" ry="10" fill="none" stroke="#16a34a" stroke-width="2.5" transform="rotate(-30 50 50)"/>
+                        <!-- Curved Text Representation -->
+                        <text x="50" y="20" font-size="8" font-weight="bold" fill="#16a34a" text-anchor="middle">TERCIO ESTUDIANTIL</text>
+                        <text x="50" y="85" font-size="9" font-weight="black" fill="#16a34a" text-anchor="middle">PUCP</text>
+                    </svg>
+                </div>
+
+                <!-- LOGO 2: IEEE WIE PUCP -->
+                <div class="h-10 sm:h-11 px-2 rounded-md bg-purple-900 border-2 border-purple-300 flex flex-col items-center justify-center text-center shadow-md">
+                    <span class="text-[6px] font-bold text-purple-200 tracking-tighter leading-tight">IEEE Women in Engineering</span>
+                    <span class="font-serif italic font-bold text-lg sm:text-xl text-white leading-none my-0.5">Wie</span>
+                    <span class="text-[5px] font-medium text-purple-300 leading-tight">Pontificia Universidad Católica del Perú</span>
+                </div>
+
+                <!-- LOGO 3: SECRETARÍA DE GÉNERO (CAIMÁN CON BANDERA) -->
+                <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-purple-400 border-2 border-purple-200 flex items-center justify-center shadow-md overflow-hidden relative">
+                    <svg viewBox="0 0 100 100" class="w-full h-full">
+                        <circle cx="50" cy="50" r="48" fill="#a855f7" />
+                        <!-- Caiman Body & Smile -->
+                        <path d="M 20 65 Q 40 30 75 40 Q 85 55 70 70 Q 40 85 20 65 Z" fill="#22c55e" stroke="#15803d" stroke-width="2"/>
+                        <circle cx="65" cy="45" r="4" fill="white"/>
+                        <circle cx="66" cy="45" r="2" fill="black"/>
+                        <path d="M 60 60 Q 75 62 80 50" fill="none" stroke="#15803d" stroke-width="3" stroke-linecap="round"/>
+                        <!-- Bandera LGTBQ+ / Inclusión -->
+                        <rect x="22" y="30" width="12" height="18" fill="#e11d48" rx="1"/>
+                        <rect x="22" y="33" width="12" height="12" fill="#facc15"/>
+                        <rect x="22" y="36" width="12" height="9" fill="#22c55e"/>
+                        <rect x="22" y="39" width="12" height="6" fill="#3b82f6"/>
+                        <line x1="22" y1="30" x2="22" y2="55" stroke="#475569" stroke-width="2"/>
+                        <text x="50" y="16" font-size="7" font-weight="black" fill="white" text-anchor="middle">SECRETARÍA DE GÉNERO</text>
+                    </svg>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <!-- MODAL GENERADOR CÓDIGO QR FOR GITHUB PAGES -->
+    <div id="qrModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-purple-950 border-2 border-purple-500 text-white rounded-2xl p-5 max-w-sm w-full text-center shadow-2xl relative">
+            <button onclick="closeQRModal()" class="absolute top-3 right-3 text-purple-300 hover:text-white text-xl font-bold">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <h3 class="font-head font-black text-xl text-purple-200 mb-1">¡Escanea para Jugar!</h3>
+            <p class="text-xs text-purple-300 mb-4">Pega este QR en la pantalla del salón para que los asistentes abran el Bingo en sus celulares.</p>
+            
+            <div class="bg-white p-3 rounded-xl inline-block shadow-inner mb-3">
+                <div id="qrcode"></div>
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-[10px] text-purple-300 mb-1 font-bold">URL de tu sitio en GitHub Pages:</label>
+                <input type="text" id="urlInput" class="w-full bg-purple-900 text-xs text-purple-100 p-2 rounded-lg border border-purple-700 text-center" placeholder="https://tu-usuario.github.io/bingo">
+            </div>
+
+            <button onclick="updateQR()" class="w-full py-2 bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs rounded-lg transition">
+                Actualizar Código QR
+            </button>
+        </div>
+    </div>
+
+    <!-- SCRIPT DE LOGICA E INTERACTIVIDAD -->
+    <script>
+        const PROMPTS = [
+            "Ha viajado fuera del país", "Toma café sin azúcar", "Sabe programar",
+            "Toca un instrumento", "Vio todo Star Wars", "Es Cachimbo/a",
+            "Usa lentes", "Tiene perro o gato", "Hace deporte",
+            "Ve anime / lee manga", "Es de WIE PUCP", "Color fav morado",
+            "Sabe armar el Rubik", "Fue a una Hackathon", "Prefiere llamadas",
+            "Leyó un libro este mes", "Prefiere dulce", "Visitó 3 facultades",
+            "Escucha K-Pop/J-Pop", "No toma café", "Sabe bailar salsa",
+            "Proyecto STEM propio", "Fue a un concierto", "Madruga 6:00 AM"
+        ];
+
+        let selectedCells = new Set();
+        let qrcodeObj = null;
+
+        function shuffleGrid() {
+            const grid = document.getElementById('grid');
+            grid.innerHTML = '';
+            selectedCells.clear();
+            updateScore();
+            
+            const items = [...PROMPTS].sort(() => Math.random() - 0.5);
+            
+            let count = 0;
+            for (let i = 0; i < 25; i++) {
+                const cell = document.createElement('div');
+                const isCenter = (i === 12);
+                
+                cell.className = `grid-cell border-2 border-purple-300/80 rounded-lg p-1 min-h-[60px] sm:min-h-[68px] flex flex-col items-center justify-center text-center text-[10px] sm:text-[11px] font-bold cursor-pointer select-none ${
+                    isCenter 
+                    ? 'bg-purple-300 text-purple-950 font-black border-purple-100 shadow-md' 
+                    : 'bg-purple-200 text-purple-950 hover:bg-purple-100'
+                }`;
+                
+                if (isCenter) {
+                    cell.innerHTML = '<span class="text-[11px] sm:text-xs font-black">LIBRE</span><span class="text-[7px] sm:text-[8px] text-purple-900 font-bold">WIE PUCP</span>';
+                    selectedCells.add(12);
+                } else {
+                    cell.innerText = items[count++];
+                }
+                
+                cell.onclick = () => toggleCell(cell, i, isCenter);
+                grid.appendChild(cell);
+            }
+        }
+
+        function toggleCell(cell, index, isCenter) {
+            if (isCenter) return;
+
+            if (selectedCells.has(index)) {
+                selectedCells.delete(index);
+                cell.classList.remove('cell-selected');
+            } else {
+                selectedCells.add(index);
+                cell.classList.add('cell-selected');
+            }
+
+            updateScore();
+            checkBingo();
+        }
+
+        function updateScore() {
+            const count = selectedCells.has(12) ? selectedCells.size - 1 : selectedCells.size;
+            document.getElementById('scoreBadge').innerText = `${count}/24`;
+        }
+
+        function resetBoard() {
+            const cells = document.querySelectorAll('.grid-cell');
+            cells.forEach((cell, idx) => {
+                if (idx !== 12) {
+                    cell.classList.remove('cell-selected');
+                }
+            });
+            selectedCells.clear();
+            selectedCells.add(12);
+            updateScore();
+        }
+
+        function checkBingo() {
+            const winningCombos = [
+                // Filas
+                [0,1,2,3,4], [5,6,7,8,9], [10,11,12,13,14], [15,16,17,18,19], [20,21,22,23,24],
+                // Columnas
+                [0,5,10,15,20], [1,6,11,16,21], [2,7,12,17,22], [3,8,13,18,23], [4,9,14,19,24],
+                // Diagonales
+                [0,6,12,18,24], [4,8,12,16,20]
+            ];
+
+            for (let combo of winningCombos) {
+                if (combo.every(idx => selectedCells.has(idx))) {
+                    triggerWin();
+                    break;
+                }
+            }
+        }
+
+        function triggerWin() {
+            if (typeof confetti === 'function') {
+                confetti({
+                    particleCount: 100,
+                    spread: 70,
+                    origin: { y: 0.6 }
+                });
+            }
+        }
+
+        function openQRModal() {
+            document.getElementById('qrModal').classList.remove('hidden');
+            const currentURL = window.location.href;
+            document.getElementById('urlInput').value = currentURL;
+            
+            if (!qrcodeObj) {
+                qrcodeObj = new QRCode(document.getElementById("qrcode"), {
+                    text: currentURL,
+                    width: 160,
+                    height: 160,
+                    colorDark: "#2e1065",
+                    colorLight: "#ffffff",
+                    correctLevel: QRCode.CorrectLevel.H
+                });
+            } else {
+                qrcodeObj.makeCode(currentURL);
+            }
+        }
+
+        function closeQRModal() {
+            document.getElementById('qrModal').classList.add('hidden');
+        }
+
+        function updateQR() {
+            const url = document.getElementById('urlInput').value.trim();
+            if (url && qrcodeObj) {
+                qrcodeObj.makeCode(url);
+            }
+        }
+
+        window.onload = shuffleGrid;
+    </script>
+</body>
+</html>
